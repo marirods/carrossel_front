@@ -33,7 +33,7 @@ class Slider {
 	}
 
 	async loadSlides() {
-		const response = await fetch('http://localhost:3000/fotos')
+		const response = await fetch('https://slider-back-end.onrender.com/fotos')
 		if (!response.ok) throw new Error('Erro ao carregar slides')
 		this.slides = await response.json()
 	}
