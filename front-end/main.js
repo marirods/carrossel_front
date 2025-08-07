@@ -1,130 +1,163 @@
-import { getCarrosselFotos } from "../modulo/api";
+class Slider {
+	constructor() {
+		this.currentSlide = 0
+		this.slides = []
+		this.autoInterval = null
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const carrosselImg = document.getElementById('carrosselImg')
-    const imageLegenda = document.getElementById('imageLegenda')
-    const imageDate = document.getElementById('imageDate')
-    let currentIndex = 0
-    let fotosData = []
-    let autoplayInterval
+		this.elements = {
+			loading: document.getElementById('loading'),
+			sliderWrapper: document.getElementById('sliderWrapper'),
+			indicators: document.getElementById('indicators'),
+			thumbnailPrev: document.getElementById('thumbnailPrev'),
+			thumbnailNext: document.getElementById('thumbnailNext')
+		}
 
-    const AUTOPLAY_DELAY = 5000
+		console.log(this.elements) // debug: veja se todos os elementos existem
 
-function updateCarrosselImg(){
-    if(fotosData.length === 0){
-        carrosselImg.id = null
-        carrosselImg.src = ''
-        carrosselImg.title = ''
-        imageLegenda.textContent = ''
-        imageDate.textContent = '31-05-2025'
-        return
-  }
-const currentImg = fotosData[currentIndex]
+		this.init()
+	}
 
-carrosselImg.src = currentImg.src
-carrosselImg.title = currentImg.legenda
+	async init() {
+		try {
+			await this.loadSlides()
+			this.createSlides()
+			this.createIndicators()
+			this.setupEvents()
+			this.showSlider()
+			this.updateThumbnails()
+			this.startAuto()
+		} catch (error) {
+			this.showError()
+			console.error(error)
+		}
+	}
 
-imageLegenda.textContent = currentFoto.legenda
-imageDate.textContent = currentFoto.data
+	async loadSlides() {
+		const response = await fetch('http://localhost:3000/fotos')
+		if (!response.ok) throw new Error('Erro ao carregar slides')
+		this.slides = await response.json()
+	}
 
-updateBolinhas()
+	createSlides() {
+		// limpa slides anteriores
+		this.elements.sliderWrapper.innerHTML = ''
+
+		this.slides.forEach((slide) => {
+			const slideDiv = document.createElement('div')
+			slideDiv.className = 'slide'
+			slideDiv.style.backgroundImage = `url(${slide.imagem})`
+
+			const content = document.createElement('div')
+			content.className = 'slide-content'
+
+			const legenda = document.createElement('p')
+			legenda.textContent = slide.legenda
+
+			const data = document.createElement('small')
+			data.textContent = slide.data
+
+			content.appendChild(legenda)
+			content.appendChild(data)
+			slideDiv.appendChild(content)
+
+			this.elements.sliderWrapper.appendChild(slideDiv)
+		})
+	}
+
+	createIndicators() {
+		this.elements.indicators.innerHTML = ''
+
+		this.slides.forEach((_, index) => {
+			const indicator = document.createElement('div')
+			indicator.className = `indicator ${index === 0 ? 'active' : ''}`
+			indicator.addEventListener('click', () => this.goTo(index))
+			this.elements.indicators.appendChild(indicator)
+		})
+	}
+
+	setupEvents() {
+		if (this.elements.thumbnailNext) {
+			this.elements.thumbnailNext.addEventListener('click', () => {
+				this.next()
+				this.resetAuto()
+			})
+		}
+		if (this.elements.thumbnailPrev) {
+			this.elements.thumbnailPrev.addEventListener('click', () => {
+				this.prev()
+				this.resetAuto()
+			})
+		}
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowRight') this.next()
+			if (e.key === 'ArrowLeft') this.prev()
+		})
+	}
+
+	showSlider() {
+		if (this.elements.loading) this.elements.loading.style.display = 'none'
+		if (this.elements.sliderWrapper) this.elements.sliderWrapper.classList.add('show')
+	}
+
+	showError() {
+		if (this.elements.loading) this.elements.loading.textContent = 'Erro ao carregar imagens'
+	}
+
+	updateSlider() {
+		const translateX = -this.currentSlide * 100
+		if (this.elements.sliderWrapper) this.elements.sliderWrapper.style.transform = `translateX(${translateX}%)`
+
+		document.querySelectorAll('.indicator').forEach((indicator, index) => {
+			indicator.classList.toggle('active', index === this.currentSlide)
+		})
+
+		this.updateThumbnails()
+	}
+
+	updateThumbnails() {
+		const totalSlides = this.slides.length
+		if (totalSlides === 0) return
+
+		const prevIndex = this.currentSlide === 0 ? totalSlides - 1 : this.currentSlide - 1
+		const nextIndex = (this.currentSlide + 1) % totalSlides
+
+		if (this.elements.thumbnailPrev) this.elements.thumbnailPrev.style.backgroundImage = `url(${this.slides[prevIndex].imagem})`
+		if (this.elements.thumbnailNext) this.elements.thumbnailNext.style.backgroundImage = `url(${this.slides[nextIndex].imagem})`
+	}
+
+	next() {
+		this.currentSlide = (this.currentSlide + 1) % this.slides.length
+		this.updateSlider()
+	}
+
+	prev() {
+		this.currentSlide = this.currentSlide === 0 ? this.slides.length - 1 : this.currentSlide - 1
+		this.updateSlider()
+	}
+
+	goTo(index) {
+		this.currentSlide = index
+		this.updateSlider()
+		this.resetAuto()
+	}
+
+	startAuto() {
+		this.autoInterval = setInterval(() => {
+			this.next()
+		}, 3000)
+	}
+
+	stopAuto() {
+		clearInterval(this.autoInterval)
+	}
+
+	resetAuto() {
+		this.stopAuto()
+		this.startAuto()
+	}
 }
 
-  function createBolinhas() {
-		// Limpa quaisquer bolinhas existentes antes de criar novas (para evitar duplicatas)
-		// Esta é a forma "simples" e comum de limpar o conteúdo de um elemento
-		while (carrosselBolinhasContainer.firstChild) {
-			carrosselBolinhasContainer.removeChild(carrosselBolinhasContainer.firstChild)
-		}
-
-		// Cria uma bolinha para cada foto nos dados
-		fotosData.forEach((_, index) => {
-			const bolinha = document.createElement('span') // Cria um novo elemento <span>
-			bolinha.classList.add('bolinha') // Adiciona a classe CSS 'dot'
-			bolinha.dataset.index = index // Armazena o índice da foto associada na bolinha
-
-			// Adiciona um evento de clique para navegar para a foto correspondente
-			bolinha.addEventListener('click', () => {
-				currentIndex = index // Define o índice da foto clicada
-				updateCarrosselContent() // Atualiza o carrossel para essa foto
-				resetAutoplay() // Reinicia o autoplay após a interação do usuário
-			})
-
-			carrosselBolinhasContainer.appendChild(bolinha) // Adiciona a bolinha ao contêiner no HTML
-		})
-
-		updateBolinhas() // Garante que a bolinha inicial (da foto 0) esteja ativa
-	}
-
-	// Função para atualizar qual bolinha está "ativa" (destacada)
-	function updateBolinhas() {
-		const bolinhas = document.querySelectorAll('.bolinhas') // Seleciona todas as bolinhas
-		bolinhas.forEach((dot, index) => {
-			if (index === currentIndex) {
-				bolinhas.classList.add('active') // Adiciona a classe 'active' à bolinha atual
-			} else {
-				bolinhas.classList.remove('active') // Remove a classe 'active' das outras
-			}
-		})
-	}
-
-	// Função para avançar o carrossel para a próxima imagem
-	function nextImage() {
-		currentIndex = currentIndex < fotosData.length - 1 ? currentIndex + 1 : 0 // Incrementa o índice ou volta para 0
-		updateCarrosselContent() // Atualiza o carrossel com a nova imagem
-	}
-
-	// --- Funções de Controle do Autoplay ---
-
-	// Inicia o avanço automático do carrossel
-	function startAutoplay() {
-		// Define um intervalo que chama 'nextImage' a cada 'AUTOPLAY_DELAY' milissegundos
-		autoplayInterval = setInterval(nextImage, AUTOPLAY_DELAY)
-	}
-
-	// Para o avanço automático do carrossel
-	function stopAutoplay() {
-		clearInterval(autoplayInterval) // Cancela o intervalo existente
-	}
-
-	// Reinicia o avanço automático (útil após uma interação do usuário)
-	function resetAutoplay() {
-		stopAutoplay() // Primeiro, para qualquer autoplay em andamento
-		startAutoplay() // Depois, inicia um novo autoplay
-	}
-
-	// --- Inicialização do Carrossel (Executado quando a página carrega) ---
-
-	// Tenta carregar os dados das fotos do servidor
-	try {
-		// Faz a requisição HTTP para o endpoint '/fotos' no seu servidor Node.js
-		const response = await fetch('/fotos')
-		fotosData = await response.json() // Converte a resposta para JSON
-
-		// Se houver fotos, inicializa o carrossel
-		if (fotosData.length > 0) {
-			createBolinhas() // Cria as bolinhas de navegação
-			updateCarrosselContent() // Exibe a primeira foto e seus detalhes
-			startAutoplay() // Inicia o autoplay
-		} else {
-			carrosselImg.alt = 'Nenhuma foto para exibir.' // Mensagem se não houver fotos
-		}
-	} catch (error) {
-		// Em caso de erro ao carregar as fotos
-		console.error('Erro ao carregar fotos:', error)
-		carrosselImg.alt = 'Erro ao carregar imagens.'
-		imageLegenda.textContent = 'Erro ao carregar dados.'
-		imageDate.textContent = ''
-	}
-
-	// --- Interação do Usuário (Opcional: Pausar/Retomar Autoplay no Hover) ---
-
-	// Seleciona o contêiner principal do carrossel
-	const carrosselContainer = document.querySelector('.carousel-container')
-
-	// Quando o mouse entra no carrossel, o autoplay é pausado
-	carrosselContainer.addEventListener('mouseenter', stopAutoplay)
-	// Quando o mouse sai do carrossel, o autoplay é reiniciado
-	carrosselContainer.addEventListener('mouseleave', startAutoplay)
-
+document.addEventListener('DOMContentLoaded', () => {
+	new Slider()
 })

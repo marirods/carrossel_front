@@ -1,28 +1,39 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+<link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+NSW:wght@100..400&display=swap" rel="stylesheet">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>CARROSSEL DE IMAGENS</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Slider de Fotos</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-    <h1>Meu Carrossel de Imagens</h1>
-   <div class= "carrossel-container">
-    <div class="carrossel-img">
-        <img id="carouselImage" src="" alt="Carregando imagem..." title="">
+    <header>
+        <div class="text">
+            <h1 class="titulo-header">Minhas Memórias no SENAI</h1>
         </div>
-       
-            <p id="imageLegenda"></p>
-            <p id="imageDate"></p>
+    </header>
+    <main class="container">
+        <section class="welcome-section">
+            <div class="logo">
+                <img src="./img/senai_logo.png" alt="">
+            </div>
+        </section>
+    </main>
+    <div id="loading">Carregando...</div>
 
-            <div class= "carrossel-bolinhas"></div>
+    <div class="slider-container">
+        <div id="thumbnailPrev" class="thumbnail"></div>
 
-        </div>
+        <div id="sliderWrapper" class="sliderWrapper"></div>
+
+        <div id="thumbnailNext" class="thumbnail"></div>
     </div>
-    
-    <script src="app.js"></script>
-    <script type="modulo" src="modulo/main.js"></script>
 
+    <div id="indicators" class="indicators"></div>
+
+    <script src="main.js"></script>
 </body>
 </html>
